@@ -14,7 +14,7 @@ import sys
 from getopt import gnu_getopt, GetoptError
 
 import gentoolkit.pprinter as pp
-from gentoolkit.dependencies import Dependencies
+from gentoolkit.dependencies import Dependencies, DependencyKind
 from gentoolkit.equery import format_options, mod_usage, CONFIG
 from gentoolkit.helpers import get_cpvs, get_installed_cpvs
 from gentoolkit.cpv import CPV
@@ -29,6 +29,7 @@ QUERY_OPTS = {
     "only_direct": True,
     "max_depth": -1,
     "package_format": None,
+    "depkind": None,
 }
 
 # =======
@@ -155,6 +156,10 @@ def print_help(with_description=True):
                 (" -D, --indirect", "search both direct and indirect dependencies"),
                 (" -F, --format=TMPL", "specify a custom output format"),
                 ("     --depth=N", "limit indirect dependency tree to specified depth"),
+                (
+                    "     --depkind=?DEPEND",
+                    "search for specific kind of dependency (BDEPEND RDEPEND etc)",
+                ),
             )
         )
     )
@@ -185,12 +190,29 @@ def parse_module_options(module_opts):
                 print_help(with_description=False)
                 sys.exit(2)
             QUERY_OPTS["max_depth"] = depth
+        elif opt in ("--depkind"):
+            if posarg in ("DEPEND", "BDEPEND", "RDEPEND", "PDEPEND"):
+                QUERY_OPTS["depkind"] = posarg
+            else:
+                err = "Module option --depkind must be one of (DEPEND BDEPEND RDEPEND PDEPEND) (got '%s')"
+                sys.stdout.write(pp.error(err % posarg))
+                print()
+                print_help(with_description=False)
+                sys.exit(2)
 
 
 def main(input_args):
     """Parse input and run the program"""
     short_opts = "hadDF:"  # -d, --direct was old option for default action
-    long_opts = ("help", "all-packages", "direct", "indirect", "format", "depth=")
+    long_opts = (
+        "help",
+        "all-packages",
+        "direct",
+        "indirect",
+        "format",
+        "depth=",
+        "depkind=",
+    )
 
     try:
         module_opts, queries = gnu_getopt(input_args, short_opts, long_opts)
@@ -205,6 +227,17 @@ def main(input_args):
     if not queries:
         print_help()
         sys.exit(2)
+
+    if QUERY_OPTS["depkind"] is None:
+        depkind = None
+    elif QUERY_OPTS["depkind"] == "DEPEND":
+        depkind = DependencyKind.DEPEND
+    elif QUERY_OPTS["depkind"] == "BDEPEND":
+        depkind = DependencyKind.BDEPEND
+    elif QUERY_OPTS["depkind"] == "RDEPEND":
+        depkind = DependencyKind.RDEPEND
+    elif QUERY_OPTS["depkind"] == "PDEPEND":
+        depkind = DependencyKind.PDEPEND
 
     #
     # Output
@@ -230,6 +263,7 @@ def main(input_args):
             pkgset=sorted(pkggetter(), key=CPV),
             max_depth=QUERY_OPTS["max_depth"],
             only_direct=QUERY_OPTS["only_direct"],
+            depkind=depkind,
             printer_fn=dep_print,
         ):
             got_match = True
