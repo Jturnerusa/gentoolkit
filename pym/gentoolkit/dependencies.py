@@ -194,6 +194,7 @@ class Dependencies(Query):
         max_depth=-1,
         only_direct=True,
         printer_fn=None,
+        depkind=None,
         # The rest of these are only used internally:
         depth=0,
         depcache=None,
@@ -250,22 +251,29 @@ class Dependencies(Query):
         if depth == 0:
             pkgset = tuple(Dependencies(x) for x in pkgset)
 
+        if depkind is None:
+            get_depends = lambda pkgdep, _, **kwargs: pkgdep.get_all_depends(**kwargs)
+        else:
+            get_depends = lambda pkgdep, depkind, **kwargs: pkgdep.get_depends_kind(
+                depkind.value, **kwargs
+            )
+
         pkgdep = None
         for pkgdep in pkgset:
-            raw_depends = pkgdep.get_all_depends(raw=True)
+            raw_depends = get_depends(pkgdep, depkind, raw=True)
             if self.cp not in raw_depends:
                 # fast path for obviously non-matching packages. This saves
                 # us the work of instantiating a whole Atom() for *every*
                 # dependency of *every* package in pkgset.
                 continue
             try:
-                all_depends = depcache[pkgdep]
+                depends = depcache[pkgdep]
             except KeyError:
-                all_depends = uniqify(pkgdep.get_all_depends())
-                depcache[pkgdep] = all_depends
+                depends = uniqify(get_depends(pkgdep, depkind))
+                depcache[pkgdep] = depends
 
             dep_is_displayed = False
-            for dep in all_depends:
+            for dep in depends:
                 # TODO: Add ability to determine if dep is enabled by USE flag.
                 #       Check portage.dep.use_reduce
                 if dep.intersects(self):
@@ -291,6 +299,7 @@ class Dependencies(Query):
                         max_depth=max_depth,
                         only_direct=only_direct,
                         printer_fn=printer_fn,
+                        depkind=depkind,
                         depth=depth + 1,
                         depcache=depcache,
                         seen=seen,
