@@ -11,6 +11,8 @@ __all__ = ("Dependencies",)
 # Imports
 # =======
 
+from enum import Enum
+
 import portage
 from portage.dep import paren_reduce
 
@@ -22,6 +24,13 @@ from gentoolkit.query import Query
 # =======
 # Classes
 # =======
+
+
+class DependencyKind(Enum):
+    DEPEND = "DEPEND"
+    RDEPEND = "RDEPEND"
+    BDEPEND = "BDEPEND"
+    PDEPEND = "PDEPEND"
 
 
 class Dependencies(Query):
