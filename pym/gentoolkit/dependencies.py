@@ -111,10 +111,17 @@ class Dependencies(Query):
         """Get the contents of RDEPEND and parse it with self.parser."""
         return self._get_depend(("RDEPEND",), **kwargs)
 
+    def get_bdepend(self, **kwargs):
+        """Get the contents of BDEPEND and parse it with self.parser."""
+        return self._get_depend(("BDEPEND",), **kwargs)
+
     def get_all_depends(self, **kwargs):
         """Get the contents of ?DEPEND and parse it with self.parser."""
         env_vars = ("DEPEND", "PDEPEND", "RDEPEND", "BDEPEND")
         return self._get_depend(env_vars, **kwargs)
+
+    def get_depends_kind(self, kind, **kwargs):
+        return self._get_depend((kind,), **kwargs)
 
     def graph_depends(
         self,
