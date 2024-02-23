@@ -27,7 +27,7 @@ from gentoolkit.package import PackageFormatter, Package
 QUERY_OPTS = {
     "include_masked": False,
     "only_direct": True,
-    "max_depth": -1,
+    "max_depth": None,
     "package_format": None,
 }
 
@@ -94,9 +94,9 @@ class DependPrinter:
         if dep_is_displayed and not self.verbose:
             return
 
-        depth = getattr(dep, "depth", 0)
+        depth = dep.depth
         indent = " " * depth
-        mdep = dep.matching_dep
+        mdep = dep.depatom
         use_conditional = ""
 
         if QUERY_OPTS["package_format"] != None:
@@ -226,17 +226,26 @@ def main(input_args):
 
         if CONFIG["verbose"]:
             print(" * These packages depend on %s:" % pp.emph(pkg.cpv))
-        if pkg.graph_reverse_depends(
-            pkgset=sorted(pkggetter(), key=CPV),
-            max_depth=QUERY_OPTS["max_depth"],
-            only_direct=QUERY_OPTS["only_direct"],
-            printer_fn=dep_print,
-        ):
-            got_match = True
 
         first_run = False
 
-    if not got_match:
+        last_seen = None
+        for pkgdep in pkg.graph_reverse_depends(
+            pkgset=sorted(pkggetter()),
+            only_direct=QUERY_OPTS["only_direct"],
+            max_depth=QUERY_OPTS["max_depth"],
+        ):
+            match last_seen:
+                case None:
+                    seen = False
+                case p if p != pkgdep:
+                    seen = False
+                case _:
+                    seen = True
+            dep_print(pkgdep, dep_is_displayed=seen)
+            last_seen = pkgdep
+
+    if last_seen is None:
         sys.exit(1)
 
 
