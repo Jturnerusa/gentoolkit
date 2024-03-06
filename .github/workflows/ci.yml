@@ -14,16 +14,27 @@ jobs:
 
      - name: gentoo setup
        run: |
+         # setup /var/db/repos/gentoo
          pushd /var/db/repos || exit $?
          wget https://github.com/gentoo-mirror/gentoo/archive/master.tar.gz -O gentoo-master.tar.gz || exit $?
          tar -xvf gentoo-master.tar.gz || exit $?
          mv gentoo-master gentoo || exit $?
          popd || exit $?
-         eselect profile set 1 || exit $? 
+         # select profile
+         eselect profile set 1 || exit $?
+         # configure binhost
+         echo '
+         [binhost]
+         sync-uri = https://distfiles.gentoo.org/releases/amd64/binpackages/17.1/x86-64
+         ' >/etc/portage/binrepos.conf
 
      - name: emerge deps
        run: |
-         emerge dev-python/tox
+         emerge --getbinpkg dev-python/tox \
+                            dev-lang/python:3.9 \
+                            dev-lang/python:3.10 \
+                            dev-lang/python:3.11 \
+                            dev-lang/python:3.12
 
      - name: run tox
        run: |
