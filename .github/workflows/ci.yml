@@ -23,10 +23,9 @@ jobs:
 
      - name: emerge deps
        run: |
-         emerge dev-build/meson dev-python/pytest
+         emerge dev-build/meson
 
-     - name: run meson tests
+     - name: run tests
        run: |
-         meson setup build &&
-         meson test -C build
+         tox run
          
