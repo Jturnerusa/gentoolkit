@@ -23,7 +23,7 @@ jobs:
          # select profile
          eselect profile set 1 || exit $?
          # configure binhost
-         rmdir -rf /etc/portage/binrepos.conf || exit $?
+         rm -rf /etc/portage/binrepos.conf || exit $?
          echo '
          [binhost]
          sync-uri = https://distfiles.gentoo.org/releases/amd64/binpackages/17.1/x86-64
