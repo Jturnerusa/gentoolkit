@@ -14,14 +14,16 @@ jobs:
 
      - name: gentoo setup
        run: |
-         wget https://github.com/gentoo-mirror/gentoo/archive/master.tar.gz || exit $?
-         tar -xvf gentoo-master.tar.gz -C /var/db/repos || exit $?
-         mv /var/db/repos/gentoo-master /var/db/repos/gentoo || exit $?
-         eselect profile set 1 || exit $?
+         pushd /var/db/repos || exit $?
+         wget https://github.com/gentoo-mirror/gentoo/archive/master.tar.gz -O gentoo-master.tar.gz || exit $?
+         tar -xvf gentoo-master.tar.gz || exit $?
+         mv gentoo-master gentoo || exit $?
+         popd || exit $?
+         eselect profile set 1 || exit $? 
 
      - name: emerge deps
        run: |
-         emerge meson pytest
+         emerge dev-build/meson dev-python/pytest
 
      - name: run meson tests
        run: |
