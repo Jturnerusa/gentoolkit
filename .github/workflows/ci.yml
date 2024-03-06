@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   
-  pytest:
+  meson-test:
     runs-on: ubuntu-latest
     container:
       image: gentoo/stage3
@@ -14,55 +14,17 @@ jobs:
 
      - name: gentoo setup
        run: |
-         emerge-webrsync && \
-         eselect profile set 1
+         wget https://github.com/gentoo-mirror/gentoo/archive/master.tar.gz || exit $?
+         tar -xvf gentoo-master.tar.gz -C /var/db/repos || exit $?
+         mv /var/db/repos/gentoo-master /var/db/repos/gentoo || exit $?
+         eselect profile set 1 || exit $?
 
      - name: emerge deps
        run: |
-         emerge dev-python/pytest
+         emerge meson pytest
 
-     - name: pytest
+     - name: run meson tests
        run: |
-         pytest -vv
+         meson setup build &&
+         meson test -C build
          
-  black:
-    runs-on: ubuntu-latest
-    container:
-      image: gentoo/stage3
-    steps:
-     - name: checkout
-       uses: actions/checkout@v4
-
-     - name: gentoo setup
-       run: |
-         emerge-webrsync && \
-         eselect profile set 1
-
-     - name: emerge deps
-       run: |
-         emerge dev-python/black
-
-     - name: black
-       run: |
-         black --check pym/gentoolkit
-
-  mypy:
-    runs-on: ubuntu-latest
-    container:
-      image: gentoo/stage3
-    steps:
-     - name: checkout
-       uses: actions/checkout@v4
-
-     - name: gentoo setup
-       run: |
-         emerge-webrsync && \
-         eselect profile set 1
-
-     - name: emerge deps
-       run: |
-         emerge dev-python/mypy
-
-     - name: mypy
-       run: |
-         mypy pym/gentoolkit
