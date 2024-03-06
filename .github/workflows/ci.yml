@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   
-  meson-test:
+  tox:
     runs-on: ubuntu-latest
     container:
       image: gentoo/stage3
@@ -23,9 +23,9 @@ jobs:
 
      - name: emerge deps
        run: |
-         emerge dev-build/meson
+         emerge dev-python/tox
 
-     - name: run tests
+     - name: run tox
        run: |
          tox run
          
