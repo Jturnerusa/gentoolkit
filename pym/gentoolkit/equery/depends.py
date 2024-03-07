@@ -28,6 +28,7 @@ QUERY_OPTS = {
     "only_direct": True,
     "max_depth": None,
     "package_format": None,
+    "evaluate_use": False,
 }
 
 # =======
@@ -152,6 +153,10 @@ def print_help(with_description=True):
                     "include dependencies that are not installed (slow)",
                 ),
                 (" -D, --indirect", "search both direct and indirect dependencies"),
+                (
+                    "     --evaluate-use",
+                    "evaluate current use settings when calculating dependencies",
+                ),
                 (" -F, --format=TMPL", "specify a custom output format"),
                 ("     --depth=N", "limit indirect dependency tree to specified depth"),
             )
@@ -184,12 +189,22 @@ def parse_module_options(module_opts):
                 print_help(with_description=False)
                 sys.exit(2)
             QUERY_OPTS["max_depth"] = depth
+        elif opt in ("--evaluate-use"):
+            QUERY_OPTS["evaluate_use"] = True
 
 
 def main(input_args):
     """Parse input and run the program"""
     short_opts = "hadDF:"  # -d, --direct was old option for default action
-    long_opts = ("help", "all-packages", "direct", "indirect", "format", "depth=")
+    long_opts = (
+        "help",
+        "all-packages",
+        "direct",
+        "indirect",
+        "format",
+        "depth=",
+        "evaluate-use",
+    )
 
     try:
         module_opts, queries = gnu_getopt(input_args, short_opts, long_opts)
@@ -233,6 +248,7 @@ def main(input_args):
             pkgset=sorted(pkggetter()),
             only_direct=QUERY_OPTS["only_direct"],
             max_depth=QUERY_OPTS["max_depth"],
+            evaluate_use=QUERY_OPTS["evaluate_use"],
         ):
             if last_seen is None or last_seen != pkgdep:
                 seen = False
