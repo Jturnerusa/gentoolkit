@@ -15,3 +15,6 @@ requires = ['meson-python']
 
 [tool.meson-python.args]
 setup = ['-Dsystem-wide=false']
+
+[tool.mypy]
+ignore_missing_imports = true

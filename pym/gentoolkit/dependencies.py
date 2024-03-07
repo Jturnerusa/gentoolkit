@@ -19,6 +19,7 @@ from typing import List, Dict, Iterable, Iterator, Set, Optional, Any, Union
 import portage
 from portage.dep import paren_reduce
 
+import gentoolkit
 from gentoolkit import errors
 from gentoolkit.atom import Atom
 from gentoolkit.query import Query
@@ -190,6 +191,7 @@ class Dependencies(Query):
         pkgset: Iterable[Union[str, CPV]],
         max_depth: Optional[int] = None,
         only_direct: bool = True,
+        evaluate_use: bool = False,
         # The rest of these are only used internally:
         depth: int = 0,
         seen: Optional[Set[str]] = None,
@@ -236,8 +238,15 @@ class Dependencies(Query):
                 continue
 
             found_match = False
+            use = gentoolkit.flag.get_all_cpv_use(pkgdep.cpv)[0]
             for dep in pkgdep.get_all_depends():
                 if dep.intersects(self):
+                    if evaluate_use:
+                        if (
+                            dep.use_conditional is not None
+                            and dep.use_conditional not in use
+                        ):
+                            continue
                     pkgdep.depatom = dep
                     pkgdep.depth = depth
                     yield pkgdep
@@ -253,6 +262,7 @@ class Dependencies(Query):
                 yield from pkgdep.graph_reverse_depends(
                     pkgset=pkgset,
                     only_direct=False,
+                    evaluate_use=evaluate_use,
                     max_depth=max_depth,
                     depth=depth + 1,
                     seen=seen,
