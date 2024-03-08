@@ -20,6 +20,8 @@ __all__ = (
 )
 
 
+from functools import cache
+
 import portage
 
 
@@ -135,6 +137,7 @@ def filter_flags(use, use_expand_hidden, usemasked, useforced):
     return list(use.values())
 
 
+@cache
 def get_all_cpv_use(cpv):
     """Uses portage to determine final USE flags and settings for an emerge
 
@@ -163,6 +166,7 @@ def get_all_cpv_use(cpv):
     return use, use_expand_hidden, usemask, useforce
 
 
+@cache
 def get_flags(cpv, final_setting=False, include_forced_masked=False):
     """Retrieves all information needed to filter out hidded, masked, etc.
     USE flags for a given package.
