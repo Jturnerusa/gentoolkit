@@ -190,6 +190,7 @@ class Dependencies(Query):
         pkgset: Iterable[Union[str, CPV]],
         max_depth: Optional[int] = None,
         only_direct: bool = True,
+        depkinds: Optional[Set[DependencyKind]] = None,
         # The rest of these are only used internally:
         depth: int = 0,
         seen: Optional[Set[str]] = None,
@@ -236,12 +237,15 @@ class Dependencies(Query):
                 continue
 
             found_match = False
-            for dep in pkgdep.get_all_depends():
-                if dep.intersects(self):
-                    pkgdep.depatom = dep
-                    pkgdep.depth = depth
-                    yield pkgdep
-                    found_match = True
+            for depkind, depends in pkgdep.get_depends().items():
+                if depkinds is not None and depkind not in depkinds:
+                    continue
+                for dep in depends:
+                    if dep.intersects(self):
+                        pkgdep.depatom = dep
+                        pkgdep.depth = depth
+                        yield pkgdep
+                        found_match = True
 
             if (
                 found_match

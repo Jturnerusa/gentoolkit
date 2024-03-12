@@ -14,7 +14,7 @@ import sys
 from getopt import gnu_getopt, GetoptError
 
 import gentoolkit.pprinter as pp
-from gentoolkit.dependencies import Dependencies
+from gentoolkit.dependencies import Dependencies, DependencyKind
 from gentoolkit.equery import format_options, mod_usage, CONFIG
 from gentoolkit.helpers import get_cpvs, get_installed_cpvs
 from gentoolkit.package import PackageFormatter, Package
@@ -28,6 +28,7 @@ QUERY_OPTS = {
     "only_direct": True,
     "max_depth": None,
     "package_format": None,
+    "depkinds": None,
 }
 
 # =======
@@ -151,6 +152,10 @@ def print_help(with_description=True):
                     " -a, --all-packages",
                     "include dependencies that are not installed (slow)",
                 ),
+                (
+                    "     --depkinds=",
+                    "limit search to a specific kinds of dependencies",
+                ),
                 (" -D, --indirect", "search both direct and indirect dependencies"),
                 (" -F, --format=TMPL", "specify a custom output format"),
                 ("     --depth=N", "limit indirect dependency tree to specified depth"),
@@ -184,12 +189,31 @@ def parse_module_options(module_opts):
                 print_help(with_description=False)
                 sys.exit(2)
             QUERY_OPTS["max_depth"] = depth
+        elif opt in ("--depkinds"):
+            kinds = posarg.split(" ")
+            if all(
+                kind in ["depend", "bdepend", "rdepend", "idepend"] for kind in kinds
+            ):
+                QUERY_OPTS["depkinds"] = kinds
+            else:
+                err = "Module option --depkinds expects [depend | bdepend | rdepend | idepend]+"
+                print(pp.error(err))
+                print_help(with_description=False)
+                sys.exit(2)
 
 
 def main(input_args):
     """Parse input and run the program"""
     short_opts = "hadDF:"  # -d, --direct was old option for default action
-    long_opts = ("help", "all-packages", "direct", "indirect", "format", "depth=")
+    long_opts = (
+        "help",
+        "all-packages",
+        "direct",
+        "indirect",
+        "format",
+        "depth=",
+        "depkinds=",
+    )
 
     try:
         module_opts, queries = gnu_getopt(input_args, short_opts, long_opts)
@@ -210,6 +234,20 @@ def main(input_args):
     #
 
     printer = Printer(verbose=CONFIG["verbose"])
+
+    if (kinds := QUERY_OPTS["depkinds"]) is not None:
+        depkinds = set()
+        for depkind in kinds:
+            if depkind == "depend":
+                depkinds.add(DependencyKind.DEPEND)
+            if depkind == "bdepend":
+                depkinds.add(DependencyKind.BDEPEND)
+            if depkind == "rdepend":
+                depkinds.add(DependencyKind.RDEPEND)
+            if depkind == "idepend":
+                depkinds.add(DependencyKind.IDEPEND)
+    else:
+        depkinds = None
 
     first_run = True
     got_match = False
@@ -233,6 +271,7 @@ def main(input_args):
             pkgset=sorted(pkggetter()),
             only_direct=QUERY_OPTS["only_direct"],
             max_depth=QUERY_OPTS["max_depth"],
+            depkinds=depkinds,
         ):
             if last_seen is None or last_seen != pkgdep:
                 seen = False
